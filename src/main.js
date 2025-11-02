@@ -16,19 +16,16 @@ import {
 
 let page = 1;
 let query = '';
+const form = document.querySelector('.form');
+const loadMoreButton = document.querySelector('.load-more-hidden');
+const gallery = document.querySelector('.gallery');
 
+form.addEventListener('submit', onFormSubmit);
+loadMoreButton.addEventListener('click', onLoadMore);
 
-    const form = document.querySelector('.form');
-    const loadMoreButton = document.querySelector('.load-more-hidden');
-    const gallery = document.querySelector('.gallery');
-
-    form.addEventListener('submit', onFormSubmit);
-    loadMoreButton.addEventListener('click', onLoadMore);
-
-    async function onFormSubmit(event) {
-        event.preventDefault();
-        query = event.currentTarget.elements["search-text"].value.trim();
-    
+async function onFormSubmit(event) {
+    event.preventDefault();
+    query = event.currentTarget.elements["search-text"].value.trim();    
         if (!query) {
             iziToast.error({
                 title: 'Error',
@@ -36,7 +33,6 @@ let query = '';
             });
             return;
         }
-    
         clearGallery();
         page = 1;
         showLoader();
@@ -51,47 +47,58 @@ let query = '';
                 return
             }
             renderGallery(data.hits);
-            showLoadMoreButton();
+            const totalPages = Math.ceil(data.totalHits / 15);
+                if (page < totalPages) {
+                     showLoadMoreButton();
+                } else {
+                    iziToast.info({
+                        title: 'Info',
+                        message: "We're sorry, but you've reached the end of the search results.",
+                    });
+                }
         } catch (error) {
-            hideLoader();
-              console.error('Error fetching images:', error);
+            console.error('Error fetching images:', error);
             iziToast.error({
                 title: 'Error',
                 message: 'An error occurred while fetching images. Please try again later.',
             });
         }
-    }
-    async function onLoadMore() {
-        page++;
-        showLoader();
-        try {
-            const data = await getImagesByQuery(query, page);
-            hideLoader();
-            if (page >= Math.ceil(data.totalHits / 15)) {
-                hideLoadMoreButton();
-                iziToast.info({
-                    title: 'Info',
-                    message: "We're sorry, but you've reached the end of the search results.",
-                });
-                return;
-            }
-            renderGallery(data.hits);
-            smoothScrollAfterLoad();
-        } catch (error) {
-            hideLoader();
-            iziToast.error({
-                title: 'Error',
-                message: 'An error occurred while fetching images. Please try again later.',
-            });
+          finally {
+            hideLoader()
         }
-    }
-    function smoothScrollAfterLoad() {
-        const firstCard = document.querySelector('.gallery .gallery__item');
-        if (!firstCard) return;
-        const { height: cardHeight } = firstCard.getBoundingClientRect();
+}
 
+async function onLoadMore() {
+    page++;
+    showLoader();
+    try {
+        const data = await getImagesByQuery(query, page);
+        hideLoader();
+        if (page >= Math.ceil(data.totalHits / 15)) {
+            hideLoadMoreButton();
+            iziToast.info({
+                title: 'Info',
+                message: "We're sorry, but you've reached the end of the search results.",
+            });
+            return;
+        }
+        renderGallery(data.hits);
+        smoothScrollAfterLoad();
+        } catch (error) {
+            hideLoader();
+            iziToast.error({
+                title: 'Error',
+                message: 'An error occurred while fetching images. Please try again later.',
+            });
+        }
+}
+
+function smoothScrollAfterLoad() {
+    const firstCard = document.querySelector('.gallery .gallery__item');
+    if (!firstCard) return;
+    const { height: cardHeight } = firstCard.getBoundingClientRect();
         window.scrollBy({
             top: cardHeight * 2,
             behavior: 'smooth',
         });
-    };
+};
