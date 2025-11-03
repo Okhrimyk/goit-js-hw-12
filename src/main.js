@@ -73,7 +73,9 @@ async function onLoadMore() {
     showLoader();
     try {
         const data = await getImagesByQuery(query, page);
-        hideLoader();
+        
+        renderGallery(data.hits);
+        smoothScrollAfterLoad();
         if (page >= Math.ceil(data.totalHits / 15)) {
             hideLoadMoreButton();
             iziToast.info({
@@ -82,15 +84,15 @@ async function onLoadMore() {
             });
             return;
         }
-        renderGallery(data.hits);
-        smoothScrollAfterLoad();
+        
         } catch (error) {
-            hideLoader();
             iziToast.error({
                 title: 'Error',
                 message: 'An error occurred while fetching images. Please try again later.',
             });
-        }
+    } finally {
+        hideLoader();
+    }
 }
 
 function smoothScrollAfterLoad() {
